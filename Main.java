@@ -30,9 +30,29 @@ public class Main {
          *         SudokuGrid sud = new SudokuGrid(values);
          * Once the SudokuGrid option is initialized, you can use the .solve() method to solve the grid and the
          * .printSolution() method to output the completed grid to the console.
-         * 
+         *
          * Unfortunately I have not yet provided error handling but hopefully that will come in the future. Enjoy!
          */
+        GraphBuilder gb = new GraphBuilder();
+        Graph g = new Graph(11);
+        g.addEdge(0,1);
+        g.addEdge(0,7);
+        g.addEdge(1,3);
+        g.addEdge(2,3);
+        g.addEdge(3,8);
+        g.addEdge(3,10);
+        g.addEdge(4,5);
+        g.addEdge(4,10);
+        g.addEdge(5,6);
+        g.addEdge(6,7);
+        g.addEdge(6,10);
+        g.addEdge(7,8);
+        g.addEdge(7,9);
+        g.addEdge(7,10);
+        g.addEdge(8,9);
+        g.addEdge(9,10);
+        g.welshPowell();
+        g.printColoring();
     }
 }
 
@@ -163,7 +183,7 @@ class Graph{
     // new vertex, we color it and mark it as colored in the colored array. Then we go back to the original current
     // color and check the next non-adjacent vertex. Once we've colored all possible vertices this color, move onto
     // the next color and repeat.
-    public void WelshPowell(){
+    public void welshPowell(){
         boolean[] colored = new boolean[vertexCount];
         degreeArray = allDegrees();
         degreeArray = sort2DArray(degreeArray);
@@ -174,15 +194,12 @@ class Graph{
                 coloredArray[currVertex] = currColor;
                 colored[currVertex] = true;
                 for (int j = 0; j < vertexCount; j++) {
-                    if (!adjMatrix[currVertex][j] && !colored[j]){
-                        int tmpCurrColor = currColor;
-                        for (int k = 0; k < vertexCount; k++) {
-                            if ((adjMatrix[j][k]) && colored[k] && (coloredArray[k]) == tmpCurrColor){
-                                tmpCurrColor++;
-                            }
+                    int tempVertex = degreeArray[j][0];
+                    if (!adjMatrix[currVertex][tempVertex] && !colored[tempVertex]){
+                        if (!hasAdjacentColor(tempVertex,currColor)){
+                            coloredArray[tempVertex] = currColor;
+                            colored[tempVertex] = true;
                         }
-                        coloredArray[j] = tmpCurrColor;
-                        colored[j] = true;
                     }
                 }
                 currColor++;
