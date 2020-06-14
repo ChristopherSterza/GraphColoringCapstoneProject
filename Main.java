@@ -33,26 +33,7 @@ public class Main {
          *
          * Unfortunately I have not yet provided error handling but hopefully that will come in the future. Enjoy!
          */
-        GraphBuilder gb = new GraphBuilder();
-        Graph g = new Graph(11);
-        g.addEdge(0,1);
-        g.addEdge(0,7);
-        g.addEdge(1,3);
-        g.addEdge(2,3);
-        g.addEdge(3,8);
-        g.addEdge(3,10);
-        g.addEdge(4,5);
-        g.addEdge(4,10);
-        g.addEdge(5,6);
-        g.addEdge(6,7);
-        g.addEdge(6,10);
-        g.addEdge(7,8);
-        g.addEdge(7,9);
-        g.addEdge(7,10);
-        g.addEdge(8,9);
-        g.addEdge(9,10);
-        g.welshPowell();
-        g.printColoring();
+        
     }
 }
 
@@ -68,15 +49,16 @@ public class Main {
 class Graph{
     private int vertexCount =0;
     private boolean[][] adjMatrix;
-    private Integer[][] degreeArray;
-    private Integer[] coloredArray;
-    private boolean[] colored;
+    private Integer[][] vertexDegrees;
+    private Integer[] vertexColors;
+    private boolean[] isColored;
     // Graph constructor.
     public Graph(int vertexCount) {
         this.vertexCount = vertexCount;
         adjMatrix = new boolean[vertexCount][vertexCount];
-        degreeArray = new Integer[vertexCount][2];
-        coloredArray = new Integer[vertexCount];
+        vertexDegrees = new Integer[vertexCount][2];
+        vertexColors = new Integer[vertexCount];
+        isColored = new boolean[vertexCount];
     }
 
     // Returns the number of vertices in the graph.
@@ -112,10 +94,10 @@ class Graph{
     // Fills the degreeArray with the vertices and their respective degrees.
     public Integer[][] allDegrees(){
         for (int i = 0; i < vertexCount; i++){
-            degreeArray[i][0] = i;
-            degreeArray[i][1] = degreeOf(i);
+            vertexDegrees[i][0] = i;
+            vertexDegrees[i][1] = degreeOf(i);
         }
-        return degreeArray;
+        return vertexDegrees;
     }
 
     // Returns the vertex with the highest degree of connections to uniquely colored vertices.
@@ -123,11 +105,11 @@ class Graph{
         int maxIndex = 0;
         int maxColor = 0;
         for (int i = 0; i < vertexCount; i++) {
-            if (!colored[i]){
+            if (!isColored[i]){
                 HashSet<Integer> colors = new HashSet<>();
                 for (int j = 0; j < vertexCount; j++) {
-                    if (adjMatrix[i][j] && colored[j] && !colors.contains(coloredArray[i])){
-                        colors.add(coloredArray[j]);
+                    if (adjMatrix[i][j] && isColored[j] && !colors.contains(vertexColors[i])){
+                        colors.add(vertexColors[j]);
                     }
                 }
                 if (colors.size()>maxColor){
@@ -184,21 +166,20 @@ class Graph{
     // color and check the next non-adjacent vertex. Once we've colored all possible vertices this color, move onto
     // the next color and repeat.
     public void welshPowell(){
-        boolean[] colored = new boolean[vertexCount];
-        degreeArray = allDegrees();
-        degreeArray = sort2DArray(degreeArray);
+        vertexDegrees = allDegrees();
+        vertexDegrees = sort2DArray(vertexDegrees);
         int currColor = 0;
-        for (int i = 0; i < degreeArray.length; i++) {
-            Integer currVertex = degreeArray[i][0];
-            if (!colored[currVertex]){
-                coloredArray[currVertex] = currColor;
-                colored[currVertex] = true;
+        for (int i = 0; i < vertexDegrees.length; i++) {
+            Integer currVertex = vertexDegrees[i][0];
+            if (!isColored[currVertex]){
+                vertexColors[currVertex] = currColor;
+                isColored[currVertex] = true;
                 for (int j = 0; j < vertexCount; j++) {
-                    int tempVertex = degreeArray[j][0];
-                    if (!adjMatrix[currVertex][tempVertex] && !colored[tempVertex]){
+                    int tempVertex = vertexDegrees[j][0];
+                    if (!adjMatrix[currVertex][tempVertex] && !isColored[tempVertex]){
                         if (!hasAdjacentColor(tempVertex,currColor)){
-                            coloredArray[tempVertex] = currColor;
-                            colored[tempVertex] = true;
+                            vertexColors[tempVertex] = currColor;
+                            isColored[tempVertex] = true;
                         }
                     }
                 }
@@ -211,25 +192,24 @@ class Graph{
     // highest degree of colored edges and coloring it the first available color. Repeat for the vertices with
     // descending degrees.
     public Integer[] partiallySolvedWelshPowell(Integer[] knownColorings){
-        coloredArray = new Integer[vertexCount];
-        colored = new boolean[vertexCount];
+        vertexColors = new Integer[vertexCount];
+        isColored = new boolean[vertexCount];
         for (int i = 0; i < knownColorings.length; i++) {
             if (knownColorings[i] != null){
-                colored[i] = true;
-                coloredArray[i] = (knownColorings[i] - 1);
+                isColored[i] = true;
+                vertexColors[i] = (knownColorings[i] - 1);
             }
         }
-        Integer currVertex = highestColorDegree();
-        for (int i = 0; i < degreeArray.length; i++) {
-            currVertex = highestColorDegree();
-            if (!colored[currVertex]){
+        for (int i = 0; i < vertexDegrees.length; i++) {
+            Integer currVertex = highestColorDegree();
+            if (!isColored[currVertex]){
                 int tmpColor = findFirstNonAdjacentColor(currVertex,0);
-                coloredArray[currVertex] = tmpColor;
-                colored[currVertex] = true;
+                vertexColors[currVertex] = tmpColor;
+                isColored[currVertex] = true;
             }
         }
-        for (int i = 0; i < coloredArray.length; i++) {
-            knownColorings[i] = coloredArray[i] + 1;
+        for (int i = 0; i < vertexColors.length; i++) {
+            knownColorings[i] = vertexColors[i] + 1;
         }
         return knownColorings;
     }
@@ -237,7 +217,7 @@ class Graph{
     // Checks and returns whether or not the passed vertex is adjacent to a vertex of the passed color.
     private boolean hasAdjacentColor(Integer vertex, Integer color){
         for (int i = 0; i < adjMatrix.length; i++) {
-            if (adjMatrix[vertex][i] && (coloredArray[i] == color)){
+            if (adjMatrix[vertex][i] && (vertexColors[i] == color)){
                 return true;
             }
         }
@@ -253,19 +233,20 @@ class Graph{
     }
 
     // Counts and returns the total number of colors used in the coloring.
-    public int totalColors(){
+    private int totalColors(){
         HashSet<Integer> colors = new HashSet<>();
-        for (int i = 0; i < coloredArray.length; i++) {
-            colors.add(coloredArray[i]);
+        for (int i = 0; i < vertexColors.length; i++) {
+            colors.add(vertexColors[i]);
         }
         return colors.size();
     }
 
     // Prints out the coloring of each vertex.
     public void printColoring(){
-        for (int i = 0; i < coloredArray.length; i++) {
-            System.out.println("Vertex " + i + " is colored with color " + coloredArray[i]);
+        for (int i = 0; i < vertexColors.length; i++) {
+            System.out.println("Vertex " + i + " is colored with color " + vertexColors[i]);
         }
+        System.out.println(totalColors() + " colors were used.");
     }
 
     // Sorts a 2D array based on its second column.
@@ -392,7 +373,7 @@ class SudokuGrid{
         values = knownValues;
         grid = new Graph(81);
         ArrayList<Integer> connectedSet = new ArrayList<>() ;
-        // Map rows.
+        // Connect rows.
         for (int i = 0; i < 81; i += 9) {
             for (int j = i; j < (i+9); j++) {
                 connectedSet.add(j);
@@ -400,7 +381,7 @@ class SudokuGrid{
             connectSet(connectedSet);
             connectedSet.clear();
         }
-        // Map columns.
+        // Connect columns.
         for (int i = 0; i < 9; i++) {
             for (int j = i; j < 81; j += 9) {
                 connectedSet.add(j);
@@ -408,7 +389,7 @@ class SudokuGrid{
             connectSet(connectedSet);
             connectedSet.clear();
         }
-        //Map 3x3 squares.
+        //Connect 3x3 squares.
         for (int i = 0; i < 81; i += 27) {
             for (int j = i; j < (i+9); j += 3) {
                 for (int k = j; k < (j+27); k += 9) {
